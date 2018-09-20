@@ -1,13 +1,20 @@
 package ru.hse.spb
 
 import java.util.*
+import kotlin.collections.ArrayList
 
 
-private class DfsRunner(private val graph: Array<MutableList<Int>>) {
+private class DfsRunner(private val graph: List<List<Int>>) {
     private enum class Color { WHITE, GREY, BLACK }
 
     private val vertexColor = Array(graph.size) { Color.WHITE }
-    val cycle = mutableListOf<Int>()
+    private val cycle = mutableListOf<Int>()
+
+    fun computeCycle(): List<Int> {
+        cycle.clear()
+        dfs(0)
+        return cycle
+    }
 
     fun dfs(vertex: Int, parent: Int = -1): Int {
         if (vertexColor[vertex] == Color.BLACK) {
@@ -33,14 +40,8 @@ private class DfsRunner(private val graph: Array<MutableList<Int>>) {
 }
 
 
-private fun getCycle(graph: Array<MutableList<Int>>): List<Int> {
-    val runner = DfsRunner(graph)
-    runner.dfs(0)
-    return runner.cycle
-}
-
-fun getDistances(graph: Array<MutableList<Int>>): IntArray {
-    val cycle = getCycle(graph)
+fun getDistances(graph: List<List<Int>>): IntArray {
+    val cycle = DfsRunner(graph).computeCycle()
     val distance = IntArray(graph.size) { -1 }
     val queue: Queue<Int> = ArrayDeque<Int>()
     for (vertex in cycle) {
@@ -59,8 +60,9 @@ fun getDistances(graph: Array<MutableList<Int>>): IntArray {
     return distance
 }
 
-fun getGraph(edges: List<Pair<Int, Int>>): Array<MutableList<Int>> {
-    val graph = Array<MutableList<Int>>(edges.size) { mutableListOf() }
+fun getGraph(edges: List<Pair<Int, Int>>): List<List<Int>> {
+    val graph = ArrayList<MutableList<Int>>(edges.size)
+    (0 until edges.size).forEach { graph.add(mutableListOf()) }
     for ((from, to) in edges) {
         graph[from].add(to)
         graph[to].add(from)
