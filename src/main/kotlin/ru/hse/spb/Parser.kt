@@ -2,9 +2,7 @@ package ru.hse.spb
 
 fun runParser(text: String) = Parser(Lexer(text).parseTokens()).parseTree()
 
-fun runFile(file: File) = file.run()
-
-fun runFile(file: String) = runParser(file).run()
+class ParserException(line: Int, message: String): InLineException(line, message)
 
 class Parser(private var tokens: MutableList<Token>) {
 
@@ -21,7 +19,7 @@ class Parser(private var tokens: MutableList<Token>) {
     private fun checkAndDrop(token: Token): Token {
         val first = takeFirst()
         if (first != token) {
-            throw InLineException(first.line, "Bad token")
+            throw ParserException(first.line, "Wanted token $token but actually was $first")
         }
         return first
     }
@@ -29,7 +27,7 @@ class Parser(private var tokens: MutableList<Token>) {
     private fun checkAndDrop(type: TokenType): Token {
         val first = takeFirst()
         if (first.type != type) {
-            throw InLineException(first.line, "Bad token")
+            throw ParserException(first.line, "Wanted token type $type but actually was $first")
         }
         return first
     }
@@ -78,6 +76,7 @@ class Parser(private var tokens: MutableList<Token>) {
         if (check(TokenType.IDENTIFIER)) {
             args.add(parseIdentifier())
             while (check(Token(","))) {
+                checkAndDrop(Token(","))
                 args.add(parseIdentifier())
             }
         }
@@ -97,7 +96,7 @@ class Parser(private var tokens: MutableList<Token>) {
     }
 
     private fun parseWhile(): While {
-        checkAndDrop(Token.FUN)
+        checkAndDrop(Token.WHILE)
         checkAndDrop(Token("("))
         val condition = parseExpression()
         checkAndDrop(Token(")"))
@@ -136,7 +135,7 @@ class Parser(private var tokens: MutableList<Token>) {
             return parseValue()
         }
         val left = parseExpression(priority - 1)
-        if (check(TokenType.OPERATION)) {
+        if (check(TokenType.OPERATION) && operationTokens[tokens.first().str] == priority) {
             val op = checkAndDrop(TokenType.OPERATION).str
             val right = parseExpression(priority)
             return BinaryExpression(left, op, right)
@@ -155,7 +154,7 @@ class Parser(private var tokens: MutableList<Token>) {
                 checkAndDrop(Token(")"))
                 expr
             }
-            else -> throw InLineException(tokens.first().line, "Bad value ${tokens.first().str}")
+            else -> throw ParserException(tokens.first().line, "Unexpected token ${tokens.first().str}")
         }
     }
 

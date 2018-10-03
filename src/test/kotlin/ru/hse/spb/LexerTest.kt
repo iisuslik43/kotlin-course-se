@@ -45,4 +45,9 @@ class LexerTest {
     fun simpleTest() {
         assertEquals(tokens("2","+","2","*","3"), runLexer("2 + 2*3"))
     }
+
+    @Test
+    fun comment() {
+        assertEquals(tokens("2","+","2"), runLexer("2 + 2//*3"))
+    }
 }

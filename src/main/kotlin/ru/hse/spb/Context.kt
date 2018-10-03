@@ -8,15 +8,11 @@ class Context(private val olderContext: Context? = null,
         functions[function.name.name] = function
     }
 
-    override fun toString(): String {
-        return "\nFunctions: $functions\nVariables: $vars\n Old context:\n---------------\n$olderContext\n---------------\n"
-    }
-
     fun getFunction(functionName: Identifier, argsLength: Int): Function {
         val function = functions[functionName.name]
         if (function != null) {
             if (!function.checkArgumentsSize(argsLength)) {
-                throw InLineException(functionName.line,
+                throw InterpreterException(functionName.line,
                         "Function ${functionName.name} hasn't $argsLength arguments")
             } else {
                 return function
@@ -24,7 +20,7 @@ class Context(private val olderContext: Context? = null,
         } else if (olderContext != null) {
             return olderContext.getFunction(functionName, argsLength)
         } else {
-            throw InLineException(functionName.line, "There is no such function ${functionName.name}")
+            throw InterpreterException(functionName.line, "There is no such function ${functionName.name}")
         }
     }
 
@@ -35,8 +31,10 @@ class Context(private val olderContext: Context? = null,
     fun reassignVar(identifier: Identifier, value: Int) {
         if (identifier.name in vars) {
             vars[identifier.name] = value
+        } else if (olderContext != null) {
+            olderContext.reassignVar(identifier, value)
         } else {
-            throw InLineException(identifier.line, "There is no such var ${identifier.name}")
+            throw InterpreterException(identifier.line, "There is no such var ${identifier.name}")
         }
     }
 
@@ -45,16 +43,16 @@ class Context(private val olderContext: Context? = null,
         if (variable != null) {
             return variable
         } else if (olderContext != null) {
-            return getVar(varName)
+            return olderContext.getVar(varName)
         } else {
-            throw InLineException(varName.line, "There is no such var ${varName.name}")
+            throw InterpreterException(varName.line, "There is no such var ${varName.name}")
         }
     }
 
     companion object {
 
         private val printlnFunction = object : Function(Identifier(-1, "println"),
-                listOf(), Block(-1, listOf())) {
+                emptyList(), Block(-1, emptyList())) {
 
             override fun checkArgumentsSize(argsSize: Int) = true
 
@@ -65,8 +63,9 @@ class Context(private val olderContext: Context? = null,
             }
         }
 
-        fun default(): Context {
-            return Context(functions = mutableMapOf("println" to printlnFunction))
-        }
+        fun default() = Context(functions = mutableMapOf("println" to printlnFunction))
+
+
+        fun test(fakePrintln: Function) = Context(functions = mutableMapOf("println" to fakePrintln))
     }
 }
