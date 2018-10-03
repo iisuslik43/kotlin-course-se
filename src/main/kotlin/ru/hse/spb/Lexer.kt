@@ -5,9 +5,9 @@ fun runLexer(text: String) = Lexer(text).parseTokens()
 class Lexer(private val text: String) {
     private val tokens = mutableListOf<Token>()
 
-    private fun StringBuilder.toToken(lineNumber: Int) {
+    private fun StringBuilder.toToken() {
         if (!isEmpty()) {
-            tokens.add(Token(toString(), lineNumber))
+            tokens.add(Token(toString()))
             setLength(0)
         }
     }
@@ -15,29 +15,29 @@ class Lexer(private val text: String) {
     fun parseTokens(): MutableList<Token> {
         val lines = text.split('\n')
         val builder = StringBuilder()
-        for ((lineNumber, line) in lines.withIndex()) {
+        for (line in lines) {
             var i = 0
             while (i in line.indices) {
                 val current = line.substring(i, i + 1)
                 val twoCurrent = if (i + 1 in line.indices) line.substring(i, i + 2) else ""
                 if (twoCurrent == "//") {
-                    builder.toToken(lineNumber)
+                    builder.toToken()
                     break
                 } else if (current in blankTokens) {
-                    builder.toToken(lineNumber)
+                    builder.toToken()
                 } else if (twoCurrent in operationTokens) {
-                    builder.toToken(lineNumber)
-                    tokens.add(Token(twoCurrent, lineNumber))
+                    builder.toToken()
+                    tokens.add(Token(twoCurrent))
                     i++
                 } else if (current in splitTokens || current in operationTokens) {
-                    builder.toToken(lineNumber)
-                    tokens.add(Token(current, lineNumber))
+                    builder.toToken()
+                    tokens.add(Token(current))
                 } else {
                     builder.append(current)
                 }
                 i++
             }
-            builder.toToken(lineNumber)
+            builder.toToken()
         }
         return tokens
     }

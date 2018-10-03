@@ -2,7 +2,7 @@ package ru.hse.spb
 
 fun runParser(text: String) = Parser(Lexer(text).parseTokens()).parseTree()
 
-class ParserException(line: Int, message: String): InLineException(line, message)
+class ParserException(message: String): Exception(message)
 
 class Parser(private var tokens: MutableList<Token>) {
 
@@ -19,7 +19,7 @@ class Parser(private var tokens: MutableList<Token>) {
     private fun checkAndDrop(token: Token): Token {
         val first = takeFirst()
         if (first != token) {
-            throw ParserException(first.line, "Wanted token $token but actually was $first")
+            throw ParserException("Wanted token $token but actually was $first")
         }
         return first
     }
@@ -27,7 +27,7 @@ class Parser(private var tokens: MutableList<Token>) {
     private fun checkAndDrop(type: TokenType): Token {
         val first = takeFirst()
         if (first.type != type) {
-            throw ParserException(first.line, "Wanted token type $type but actually was $first")
+            throw ParserException("Wanted token type $type but actually was $first")
         }
         return first
     }
@@ -45,8 +45,7 @@ class Parser(private var tokens: MutableList<Token>) {
         while (!tokens.isEmpty() && !check(Token("}"))) {
             statements.add(parseStatement())
         }
-        val line = if (!statements.isEmpty()) statements.first().line else -1
-        return Block(line, statements)
+        return Block(statements)
     }
 
     private fun parseBlockWithBranches(): Block {
@@ -154,7 +153,7 @@ class Parser(private var tokens: MutableList<Token>) {
                 checkAndDrop(Token(")"))
                 expr
             }
-            else -> throw ParserException(tokens.first().line, "Unexpected token ${tokens.first().str}")
+            else -> throw ParserException("Unexpected token ${tokens.first().str}")
         }
     }
 

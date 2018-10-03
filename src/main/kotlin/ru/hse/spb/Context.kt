@@ -10,17 +10,16 @@ class Context(private val olderContext: Context? = null,
 
     fun getFunction(functionName: Identifier, argsLength: Int): Function {
         val function = functions[functionName.name]
-        if (function != null) {
+        return if (function != null) {
             if (!function.checkArgumentsSize(argsLength)) {
-                throw InterpreterException(functionName.line,
-                        "Function ${functionName.name} hasn't $argsLength arguments")
+                throw InterpreterException("Function ${functionName.name} hasn't $argsLength arguments")
             } else {
-                return function
+                function
             }
         } else if (olderContext != null) {
-            return olderContext.getFunction(functionName, argsLength)
+            olderContext.getFunction(functionName, argsLength)
         } else {
-            throw InterpreterException(functionName.line, "There is no such function ${functionName.name}")
+            throw InterpreterException("There is no such function ${functionName.name}")
         }
     }
 
@@ -29,30 +28,26 @@ class Context(private val olderContext: Context? = null,
     }
 
     fun reassignVar(identifier: Identifier, value: Int) {
-        if (identifier.name in vars) {
-            vars[identifier.name] = value
-        } else if (olderContext != null) {
-            olderContext.reassignVar(identifier, value)
-        } else {
-            throw InterpreterException(identifier.line, "There is no such var ${identifier.name}")
+        when {
+            identifier.name in vars -> vars[identifier.name] = value
+            olderContext != null -> olderContext.reassignVar(identifier, value)
+            else -> throw InterpreterException("There is no such var ${identifier.name}")
         }
     }
 
     fun getVar(varName: Identifier): Int {
         val variable = vars[varName.name]
-        if (variable != null) {
-            return variable
-        } else if (olderContext != null) {
-            return olderContext.getVar(varName)
-        } else {
-            throw InterpreterException(varName.line, "There is no such var ${varName.name}")
+        return when {
+            variable != null -> variable
+            olderContext != null -> olderContext.getVar(varName)
+            else -> throw InterpreterException("There is no such var ${varName.name}")
         }
     }
 
     companion object {
 
-        private val printlnFunction = object : Function(Identifier(-1, "println"),
-                emptyList(), Block(-1, emptyList())) {
+        private val printlnFunction = object : Function(Identifier("println"),
+                emptyList(), Block(emptyList())) {
 
             override fun checkArgumentsSize(argsSize: Int) = true
 

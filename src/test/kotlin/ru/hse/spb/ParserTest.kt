@@ -5,15 +5,15 @@ import org.junit.Test
 
 class ParserTest {
 
-    fun fileFrom(vararg statements: Statement) = File(Block(0, statements.toList()))
+    private fun fileFrom(vararg statements: Statement) = File(Block(statements.toList()))
 
-    fun ident(str: String) = Identifier(-1, str)
+    private fun ident(str: String) = Identifier(str)
 
-    fun number(value: Int) = Number(-1, value)
+    private fun number(value: Int) = Number(value)
 
-    val arithmNode = BinaryExpression(number(2), "+", number(2))
+    private val arithmNode = BinaryExpression(number(2), "+", number(2))
 
-    val predicate = BinaryExpression(arithmNode, "==", number(4))
+    private val predicate = BinaryExpression(arithmNode, "==", number(4))
 
     @Test
     fun simpleTest() {
@@ -41,7 +41,7 @@ class ParserTest {
     fun functionWithEmptyBody() {
         val code = "fun foo(a, b) {}"
         assertEquals(fileFrom(Function(ident("foo"), listOf(ident("a"), ident("b")),
-                Block(0, emptyList()))),
+                Block(emptyList()))),
                 runParser(code))
     }
 
@@ -49,14 +49,14 @@ class ParserTest {
     fun functionWithEmptyArgs() {
         val code = "fun foo() {return 0}"
         assertEquals(fileFrom(Function(ident("foo"), emptyList(),
-                Block(0, listOf(Return(number(0)))))), runParser(code))
+                Block(listOf(Return(number(0)))))), runParser(code))
     }
 
     @Test
     fun functionWithTwoStatements() {
         val code = "fun foo() {var x = 2 kek()}"
         assertEquals(fileFrom(Function(ident("foo"), emptyList(),
-                Block(0, listOf(Variable(ident("x"), number(2)),
+                Block(listOf(Variable(ident("x"), number(2)),
                         FunctionCall(ident("kek"), emptyList()))))), runParser(code))
     }
 
@@ -105,14 +105,14 @@ class ParserTest {
     @Test
     fun whileTest() {
         val code = "while(2 + 2 == 4) {i = 4}"
-        assertEquals(fileFrom(While(predicate, Block(0, listOf(Assignment(ident("i"), number(4)))))),
+        assertEquals(fileFrom(While(predicate, Block(listOf(Assignment(ident("i"), number(4)))))),
                 runParser(code))
     }
 
     @Test
     fun ifTest() {
         val code = "if(2 + 2 == 4) {i = 4}"
-        assertEquals(fileFrom(If(predicate, Block(0, listOf(Assignment(ident("i"), number(4)))),
+        assertEquals(fileFrom(If(predicate, Block(listOf(Assignment(ident("i"), number(4)))),
                 null)),
                 runParser(code))
     }
@@ -120,8 +120,8 @@ class ParserTest {
     @Test
     fun ifElseTest() {
         val code = "if(2 + 2 == 4) {i = 4} else {return 2}"
-        assertEquals(fileFrom(If(predicate, Block(0, listOf(Assignment(ident("i"), number(4)))),
-                Block(0, listOf(Return(number(2)))))),
+        assertEquals(fileFrom(If(predicate, Block(listOf(Assignment(ident("i"), number(4)))),
+                Block(listOf(Return(number(2)))))),
                 runParser(code))
     }
 

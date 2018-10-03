@@ -1,16 +1,14 @@
 package ru.hse.spb
 
-abstract class Node(val line: Int)
+abstract class Node
 
 fun Int.toBoolean() = this != 0
 
 fun Boolean.toInt() = if (this) 1 else 0
 
-fun runFile(file: String) = runParser(file).run()
-
 fun runFileFakePrint(file: String): String {
-    val fakePrintln = object : Function(Identifier(-1, "println"),
-            emptyList(), Block(-1, emptyList())) {
+    val fakePrintln = object : Function(Identifier("println"),
+            emptyList(), Block(emptyList())) {
 
         override fun checkArgumentsSize(argsSize: Int) = true
 
@@ -26,19 +24,17 @@ fun runFileFakePrint(file: String): String {
     return fakePrintln.builder.toString()
 }
 
-class InterpreterException(line: Int, message: String): InLineException(line, message)
+class InterpreterException(message: String): Exception(message)
 
-class File(private val block: Block) : Node(block.line) {
+data class File(private val block: Block) : Node() {
     fun run(context: Context = Context.default()) {
         block.run(context)
     }
 
-    override fun equals(other: Any?) = other is File && other.block == block
-
     override fun toString() = block.toString()
 }
 
-class Block(line: Int, private val statements: List<Statement>) : Node(line) {
+data class Block(private val statements: List<Statement>) : Node() {
     fun run(context: Context): Int? {
         for (statement in statements) {
             statement.run(context)?.let { if (statement !is FunctionCall) return it }
@@ -46,7 +42,6 @@ class Block(line: Int, private val statements: List<Statement>) : Node(line) {
         return null
     }
 
-    override fun equals(other: Any?) = other is Block && other.statements == statements
 
     override fun toString(): String {
         val builder = StringBuilder()
@@ -55,12 +50,12 @@ class Block(line: Int, private val statements: List<Statement>) : Node(line) {
     }
 }
 
-sealed class Statement(line: Int) : Node(line) {
+sealed class Statement() : Node() {
     abstract fun run(context: Context = Context.default()): Int?
 }
 
 open class Function(val name: Identifier, private val args: List<Identifier>,
-                    private val body: Block) : Statement(name.line) {
+                    private val body: Block) : Statement() {
     override fun run(context: Context): Int? {
         context.addFunction(this)
         return null
@@ -86,14 +81,12 @@ open class Function(val name: Identifier, private val args: List<Identifier>,
     }
 }
 
-class Variable(val name: Identifier, private val expr: Expression?) : Statement(name.line) {
+data class Variable(val name: Identifier, private val expr: Expression?) : Statement() {
     override fun run(context: Context): Int? {
         val value = expr?.compute(context) ?: 0
         context.addVar(name, value)
         return null
     }
-
-    override fun equals(other: Any?) = other is Variable && other.name == name && other.expr == expr
 
     override fun toString() = "var $name = $expr"
 
@@ -102,7 +95,7 @@ class Variable(val name: Identifier, private val expr: Expression?) : Statement(
     }
 }
 
-class While(private val condition: Expression, private val body: Block) : Statement(condition.line) {
+data class While(private val condition: Expression, private val body: Block) : Statement() {
     override fun run(context: Context): Int? {
         val whileContext = Context(context)
         while (condition.compute(context).toBoolean()) {
@@ -111,8 +104,6 @@ class While(private val condition: Expression, private val body: Block) : Statem
         return null
     }
 
-    override fun equals(other: Any?) = other is While && other.condition == condition && other.body == body
-
     override fun toString(): String = "while ($condition) {\n$body\n}"
 
     companion object {
@@ -120,8 +111,8 @@ class While(private val condition: Expression, private val body: Block) : Statem
     }
 }
 
-class If(private val condition: Expression, private val ifBody: Block,
-         private val elseBody: Block?) : Statement(condition.line) {
+data class If(private val condition: Expression, private val ifBody: Block,
+         private val elseBody: Block?) : Statement() {
     override fun run(context: Context): Int? {
         val ifContext = Context(context)
         if (condition.compute(context).toBoolean()) {
@@ -135,22 +126,16 @@ class If(private val condition: Expression, private val ifBody: Block,
     override fun toString(): String = "if ($condition) {\n$ifBody\n}" +
             if (elseBody != null) "else {\n$elseBody\n}" else ""
 
-    override fun equals(other: Any?) = other is If && other.condition == condition && other.ifBody == ifBody &&
-            other.elseBody == elseBody
-
-
     companion object {
         fun check(tokens: MutableList<Token>) = tokens.firstIs(Token.IF)
     }
 }
 
-class Assignment(private val name: Identifier, private val expr: Expression) : Statement(name.line) {
+data class Assignment(private val name: Identifier, private val expr: Expression) : Statement() {
     override fun run(context: Context): Int? {
         context.reassignVar(name, expr.compute(context))
         return null
     }
-
-    override fun equals(other: Any?) = other is Assignment && other.name == name && other.expr == expr
 
     override fun toString() = "$name = $expr"
 
@@ -159,12 +144,10 @@ class Assignment(private val name: Identifier, private val expr: Expression) : S
     }
 }
 
-class Return(private val expr: Expression) : Statement(expr.line) {
+data class Return(private val expr: Expression) : Statement() {
     override fun run(context: Context): Int? {
         return expr.compute(context)
     }
-
-    override fun equals(other: Any?) = other is Return && other.expr == expr
 
     override fun toString() = "return $expr"
 
@@ -173,7 +156,7 @@ class Return(private val expr: Expression) : Statement(expr.line) {
     }
 }
 
-sealed class Expression(line: Int) : Statement(line) {
+sealed class Expression : Statement() {
     override fun run(context: Context): Int? {
         return compute(context)
     }
@@ -181,7 +164,7 @@ sealed class Expression(line: Int) : Statement(line) {
     abstract fun compute(context: Context): Int
 }
 
-class FunctionCall(private val name: Identifier, private val args: List<Expression>) : Expression(name.line) {
+data class FunctionCall(private val name: Identifier, private val args: List<Expression>) : Expression() {
     override fun compute(context: Context): Int {
         val function = context.getFunction(name, args.size)
         val arguments = args.map { it.compute(context) }
@@ -190,15 +173,13 @@ class FunctionCall(private val name: Identifier, private val args: List<Expressi
 
     override fun toString() = "$name($args)"
 
-    override fun equals(other: Any?) = other is FunctionCall && other.name == name && other.args == args
-
     companion object {
         fun check(tokens: MutableList<Token>) = tokens.firstIs(TokenType.IDENTIFIER) && tokens.secondIs(Token("("))
     }
 }
 
-class BinaryExpression(private val left: Expression, private val op: String,
-                       private val right: Expression) : Expression(left.line) {
+data class BinaryExpression(private val left: Expression, private val op: String,
+                       private val right: Expression) : Expression() {
     override fun compute(context: Context): Int {
         val l = left.compute(context)
         when (op) {
@@ -218,28 +199,19 @@ class BinaryExpression(private val left: Expression, private val op: String,
                     ">" -> (l > r).toInt()
                     "<=" -> (l <= r).toInt()
                     ">=" -> (l >= r).toInt()
-                    else -> throw InterpreterException(line, "Unexpected operation $op")
+                    else -> throw InterpreterException("Unexpected operation $op")
                 }
             }
         }
     }
 
     override fun toString() = "($left $op $right)"
-
-    override fun equals(other: Any?) = other is BinaryExpression && other.left == left &&
-            other.op == op && other.right == right
-
-    companion object {
-        fun check(tokens: MutableList<Token>) = true
-    }
 }
 
-class Identifier(line: Int, val name: String) : Expression(line) {
+data class Identifier(val name: String) : Expression() {
     override fun compute(context: Context): Int {
         return context.getVar(this)
     }
-
-    override fun equals(other: Any?) = other is Identifier && name == other.name
 
     override fun toString() = name
 
@@ -248,15 +220,12 @@ class Identifier(line: Int, val name: String) : Expression(line) {
     }
 }
 
-class Number(line: Int, private val value: Int) : Expression(line) {
+data class Number(private val value: Int) : Expression() {
     override fun compute(context: Context): Int {
         return value
     }
 
     override fun toString() = value.toString()
-
-
-    override fun equals(other: Any?) = other is Number && value == other.value
 
     companion object {
         fun check(tokens: MutableList<Token>) = tokens.firstIs(TokenType.NUMBER)
