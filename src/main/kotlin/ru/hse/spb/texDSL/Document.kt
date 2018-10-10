@@ -8,12 +8,12 @@ import java.lang.Exception
 annotation class TagMarker
 
 @TagMarker
-abstract class Tag(val name: String) {
+abstract class Tag(protected val name: String) {
     abstract fun toPrintStream(out: PrintStream)
 }
 
-open class TagWithChildren(name: String, val args: List<String> = emptyList(),
-                               val optionalArgs: Map<String, String> = emptyMap()) : Tag(name) {
+open class TagWithChildren(name: String, private val args: List<String> = emptyList(),
+                           private val optionalArgs: Map<String, String> = emptyMap()) : Tag(name) {
     override fun toPrintStream(out: PrintStream) {
         out.print("\\begin{$name}")
         args.forEach { out.print("{$it}") }
@@ -23,7 +23,7 @@ open class TagWithChildren(name: String, val args: List<String> = emptyList(),
         out.println("\\end{$name}")
     }
 
-    val children: MutableList<Tag> = mutableListOf()
+    protected val children: MutableList<Tag> = mutableListOf()
 
     operator fun String.unaryPlus() {
         children.add(TextTag(this))
@@ -92,15 +92,15 @@ class Document : TagWithChildren("document") {
     }
 }
 
-data class TextTag(val text: String) : Tag("text") {
+data class TextTag(private val text: String) : Tag("text") {
     override fun toPrintStream(out: PrintStream) = out.println(text)
 }
 
-data class DocumentClass(val className: String) : Tag("documentClass") {
+data class DocumentClass(private val className: String) : Tag("documentClass") {
     override fun toPrintStream(out: PrintStream) = out.println("\\documentClass{$className}")
 }
 
-data class Packages(val packages: List<String>) : Tag("usepackage") {
+data class Packages(private val packages: List<String>) : Tag("usepackage") {
     override fun toPrintStream(out: PrintStream) {
         val list = packages.reduce { a, b -> a + ", " + b }
         out.println("\\usepackage{$list}")
