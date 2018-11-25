@@ -7,6 +7,7 @@ val operationTokens = hashMapOf("+" to 2, "-" to 2, "*" to 1, "/" to 1, "%" to 1
         "<" to 3, "<=" to 3, "&&" to 5, "||" to 6, "=" to 9)
 val keyWords = setOf("fun", "var", "while", "if", "else", "return")
 val blankTokens = setOf(" ", "\n", "\t")
+val identRegex = "[a-z_]\\w*".toRegex()
 
 class LexerException(message: String) : Exception(message)
 
@@ -17,22 +18,14 @@ data class Token(val str: String) {
         str in splitTokens -> TokenType.SPLIT
         isNumber() -> TokenType.NUMBER
         else -> {
-            val regex = "[a-z_]\\w*".toRegex()
-            if (regex.matchEntire(str) == null) {
+            if (identRegex.matchEntire(str) == null) {
                 throw LexerException("Bad token $str")
             }
             TokenType.IDENTIFIER
         }
     }
 
-    private fun isNumber(): Boolean {
-        try {
-            str.toInt()
-        } catch (e: NumberFormatException) {
-            return false
-        }
-        return true
-    }
+    private fun isNumber(): Boolean = str.toIntOrNull() != null
 
     fun toIdentifier(): Identifier {
         if (type != TokenType.IDENTIFIER) {
@@ -60,11 +53,11 @@ data class Token(val str: String) {
     }
 }
 
-fun MutableList<Token>.firstIs(token: Token) = !isEmpty() && first() == token
+fun List<Token>.firstIs(token: Token) = !isEmpty() && first() == token
 
-fun MutableList<Token>.firstIs(type: TokenType) = !isEmpty() && first().type == type
+fun List<Token>.firstIs(type: TokenType) = !isEmpty() && first().type == type
 
-fun MutableList<Token>.secondIs(token: Token) = size > 1 && get(1) == token
+fun List<Token>.secondIs(token: Token) = size > 1 && get(1) == token
 
 
 enum class TokenType {

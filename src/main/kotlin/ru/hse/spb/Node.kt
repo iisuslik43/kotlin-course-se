@@ -1,7 +1,5 @@
 package ru.hse.spb
 
-abstract class Node
-
 fun Int.toBoolean() = this != 0
 
 fun Boolean.toInt() = if (this) 1 else 0
@@ -25,6 +23,8 @@ fun runFileFakePrint(file: String): String {
 }
 
 class InterpreterException(message: String): Exception(message)
+
+sealed class Node
 
 data class File(private val block: Block) : Node() {
     fun run(context: Context = Context.default()) {
@@ -50,7 +50,7 @@ data class Block(private val statements: List<Statement>) : Node() {
     }
 }
 
-sealed class Statement() : Node() {
+sealed class Statement : Node() {
     abstract fun run(context: Context = Context.default()): Int?
 }
 
@@ -75,6 +75,13 @@ open class Function(val name: Identifier, private val args: List<Identifier>,
 
     override fun equals(other: Any?) = other is Function && other.name == name &&
             other.args == args && other.body == body
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + args.hashCode()
+        result = 31 * result + body.hashCode()
+        return result
+    }
 
     companion object {
         fun check(tokens: MutableList<Token>) = tokens.firstIs(Token.FUN)
