@@ -59,14 +59,14 @@ class Document : TagWithChildren("document") {
         const val endDocument = "\\end{document}"
     }
 
-    private var documentClass: DocumentClass? = null
+    lateinit private var documentClassTag: DocumentClass
     private val packageList: MutableList<Packages> = mutableListOf()
 
     fun documentClass(className: String) {
-        if (documentClass != null) {
+        if (this::documentClassTag.isInitialized) {
             throw DocumentClassException("Two documentClasses in document")
         }
-        documentClass = DocumentClass(className)
+        documentClassTag = DocumentClass(className)
     }
 
     fun usepackage(vararg packages: String) {
@@ -84,7 +84,11 @@ class Document : TagWithChildren("document") {
     }
 
     override fun toPrintStream(out: PrintStream) {
-        documentClass?.toPrintStream(out) ?: throw DocumentClassException("DocumentClass has not been defined")
+        if (this::documentClassTag.isInitialized){
+            documentClassTag.toPrintStream(out)
+        } else {
+            throw DocumentClassException("DocumentClass has not been defined")
+        }
         out.printTags(packageList)
         out.println(beginDocument)
         out.printTags(children)
@@ -102,7 +106,7 @@ data class DocumentClass(private val className: String) : Tag("documentClass") {
 
 data class Packages(private val packages: List<String>) : Tag("usepackage") {
     override fun toPrintStream(out: PrintStream) {
-        val list = packages.reduce { a, b -> a + ", " + b }
+        val list = packages.reduce { a, b -> "$a, $b" }
         out.println("\\usepackage{$list}")
     }
 }
@@ -144,8 +148,8 @@ fun document(init: Document.() -> Unit): Document {
 }
 
 fun PrintStream.printTags(Tags: List<Tag>) {
-    for (Tag in Tags) {
-        Tag.toPrintStream(this)
+    for (tag in Tags) {
+        tag.toPrintStream(this)
     }
 }
 
