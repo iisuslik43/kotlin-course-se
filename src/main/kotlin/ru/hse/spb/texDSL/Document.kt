@@ -28,8 +28,8 @@ open class TagWithChildren(name: String, private val args: List<String> = emptyL
     operator fun String.unaryPlus() {
         children.add(TextTag(this))
     }
-    
-    protected fun <T: Tag> initTag(tag: T, init: T.() -> Unit) {
+
+    protected fun <T : Tag> initTag(tag: T, init: T.() -> Unit) {
         tag.init()
         children.add(tag)
     }
@@ -84,7 +84,7 @@ class Document : TagWithChildren("document") {
     }
 
     override fun toPrintStream(out: PrintStream) {
-        if (this::documentClassTag.isInitialized){
+        if (this::documentClassTag.isInitialized) {
             documentClassTag.toPrintStream(out)
         } else {
             throw DocumentClassException("DocumentClass has not been defined")
@@ -135,17 +135,13 @@ class Math() : TagWithChildren("math")
 class CustomTag(tagName: String, optionalArgs: Map<String, String> = mapOf()) :
         TagWithChildren(tagName, optionalArgs = optionalArgs)
 
-class FlushLeft(): TagWithChildren("flushleft")
+class FlushLeft() : TagWithChildren("flushleft")
 
-class FlushRight(): TagWithChildren("flushright")
+class FlushRight() : TagWithChildren("flushright")
 
-class Center(): TagWithChildren("center")
+class Center() : TagWithChildren("center")
 
-fun document(init: Document.() -> Unit): Document {
-    val document = Document()
-    document.init()
-    return document
-}
+fun document(init: Document.() -> Unit): Document = Document().apply(init)
 
 fun PrintStream.printTags(Tags: List<Tag>) {
     for (tag in Tags) {
